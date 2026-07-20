@@ -2,6 +2,26 @@ import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { supabase } from './supabaseClient'
 
+// ---------- Ícones (SVG próprio, não depende de fonte externa) ----------
+function Icon({ children, size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      {children}
+    </svg>
+  )
+}
+const IconHome = (p) => <Icon {...p}><path d="M3 11l9-8 9 8" /><path d="M5 10v10h14V10" /></Icon>
+const IconSearch = (p) => <Icon {...p}><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></Icon>
+const IconChat = (p) => <Icon {...p}><path d="M4 4h16v12H8l-4 4V4z" /></Icon>
+const IconAward = (p) => <Icon {...p}><circle cx="12" cy="8" r="5" /><path d="M8 13l-1.5 7L12 17l5.5 3L16 13" /></Icon>
+const IconUser = (p) => <Icon {...p}><circle cx="12" cy="8" r="4" /><path d="M4 21c1.5-4.5 5-6 8-6s6.5 1.5 8 6" /></Icon>
+const IconBrick = (p) => <Icon {...p}><rect x="3" y="9" width="18" height="6" rx="1" /><path d="M3 12h5M11 12h5M19 12h2" /></Icon>
+const IconBolt = (p) => <Icon {...p}><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" /></Icon>
+const IconDroplet = (p) => <Icon {...p}><path d="M12 2s7 8 7 13a7 7 0 0 1-14 0c0-5 7-13 7-13z" /></Icon>
+const IconBrush = (p) => <Icon {...p}><path d="M9 15l-4 6" /><path d="M14 4c3 0 6 2 6 5 0 4-6 4-6 8-3 0-5-2-5-5 0-4 2-8 5-8z" /></Icon>
+const IconBack = (p) => <Icon {...p}><path d="M15 18l-6-6 6-6" /></Icon>
+const IconEdit = (p) => <Icon {...p}><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></Icon>
+
 // ---------- Marca (nível de bolha) ----------
 function LevelMark({ size = 22, color = '#F2A93B' }) {
   return (
@@ -12,13 +32,28 @@ function LevelMark({ size = 22, color = '#F2A93B' }) {
   )
 }
 
+// ---------- Botão de voltar ----------
+function BackButton() {
+  const navigate = useNavigate()
+  return (
+    <button
+      onClick={() => navigate(-1)}
+      aria-label="Voltar"
+      style={{ background: 'none', border: 'none', color: '#FAF8F3', padding: 0, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}
+    >
+      <IconBack size={18} />
+      <span style={{ fontSize: 13 }}>Voltar</span>
+    </button>
+  )
+}
+
 // ---------- Navegação inferior ----------
 const NAV_ITEMS = [
-  { path: '/', icon: 'ti-home' },
-  { path: '/buscar', icon: 'ti-search' },
-  { path: '/chat', icon: 'ti-message-circle', disabled: true },
-  { path: '/recompensas', icon: 'ti-award', disabled: true },
-  { path: '/perfil', icon: 'ti-user' },
+  { path: '/', Icon: IconHome },
+  { path: '/buscar', Icon: IconSearch },
+  { path: '/chat', Icon: IconChat, disabled: true },
+  { path: '/recompensas', Icon: IconAward, disabled: true },
+  { path: '/perfil', Icon: IconUser },
 ]
 
 const navItemStyleDisabled = { opacity: 0.35, pointerEvents: 'none' }
@@ -32,6 +67,7 @@ function BottomNav() {
         const isActive = location.pathname === item.path
         const linkClass = isActive ? 'active' : ''
         const linkStyle = item.disabled ? navItemStyleDisabled : undefined
+        const ItemIcon = item.Icon
         return (
           <a
             key={item.path}
@@ -40,7 +76,7 @@ function BottomNav() {
             style={linkStyle}
             onClick={(e) => { e.preventDefault(); navigate(item.path) }}
           >
-            <i className={`ti ${item.icon}`} aria-hidden="true"></i>
+            <ItemIcon size={22} />
           </a>
         )
       })}
@@ -118,10 +154,10 @@ function Login() {
 
 // ---------- Início ----------
 const CATEGORIES = [
-  { label: 'Pedreiro', icon: 'ti-brick' },
-  { label: 'Eletricista', icon: 'ti-bolt' },
-  { label: 'Encanador', icon: 'ti-droplet' },
-  { label: 'Pintor', icon: 'ti-brush' },
+  { label: 'Pedreiro', Icon: IconBrick },
+  { label: 'Eletricista', Icon: IconBolt },
+  { label: 'Encanador', Icon: IconDroplet },
+  { label: 'Pintor', Icon: IconBrush },
 ]
 
 function Home() {
@@ -148,17 +184,20 @@ function Home() {
         <div className="brand"><LevelMark /><span>bikobom</span></div>
         <p style={{ color: '#C9D2DE', fontSize: 13, margin: '0 0 12px' }}>{userName ? `Bom dia, ${userName}` : 'Bom dia'}</p>
         <button className="search-box" onClick={() => navigate('/buscar')}>
-          <i className="ti ti-search" aria-hidden="true"></i> O que você precisa hoje?
+          <IconSearch size={17} /> O que você precisa hoje?
         </button>
       </div>
       <p className="section-title">Categorias</p>
       <div className="category-row">
-        {CATEGORIES.map((c) => (
-          <button key={c.label} className="category-chip" style={{ background: 'none', border: 'none', padding: 0 }} onClick={() => navigate(`/buscar?categoria=${c.label}`)}>
-            <div className="icon-box"><i className={`ti ${c.icon}`} aria-hidden="true"></i></div>
-            <p>{c.label}</p>
-          </button>
-        ))}
+        {CATEGORIES.map((c) => {
+          const CatIcon = c.Icon
+          return (
+            <button key={c.label} className="category-chip" style={{ background: 'none', border: 'none', padding: 0 }} onClick={() => navigate(`/buscar?categoria=${c.label}`)}>
+              <div className="icon-box"><CatIcon size={20} /></div>
+              <p>{c.label}</p>
+            </button>
+          )
+        })}
       </div>
       <p className="section-title">Profissionais no ponto</p>
       {providers.length === 0 && <p style={{ padding: '0 18px', fontSize: 12, color: 'var(--biko-sub)' }}>Nenhum profissional cadastrado ainda por aqui.</p>}
@@ -196,7 +235,10 @@ function Search() {
 
   return (
     <div className="app-shell">
-      <div className="topbar" style={{ paddingBottom: 18 }}><div className="brand"><span>Buscar profissional</span></div></div>
+      <div className="topbar" style={{ paddingBottom: 18 }}>
+        <BackButton />
+        <div className="brand"><span>Buscar profissional</span></div>
+      </div>
       <div className="page-pad" style={{ paddingBottom: 0 }}>
         <input className="field" placeholder="Categoria (ex: Pedreiro)" value={categoria} onChange={(e) => setCategoria(e.target.value)} />
         <input className="field" placeholder="Cidade" value={cidade} onChange={(e) => setCidade(e.target.value)} />
@@ -221,36 +263,153 @@ function Search() {
 // ---------- Perfil ----------
 function Profile() {
   const [profile, setProfile] = useState(null)
+  const [freelancer, setFreelancer] = useState(null)
+  const [userId, setUserId] = useState(null)
+  const [editingProfile, setEditingProfile] = useState(false)
+  const [becomingProvider, setBecomingProvider] = useState(false)
+  const [editingProvider, setEditingProvider] = useState(false)
+  const [saveError, setSaveError] = useState('')
+
+  const [name, setName] = useState('')
+  const [city, setCity] = useState('')
+  const [state, setState] = useState('')
+
+  const [role, setRole] = useState('Pedreiro')
+  const [phone, setPhone] = useState('')
+  const [description, setDescription] = useState('')
+  const [photoUrl, setPhotoUrl] = useState('')
+
   const navigate = useNavigate()
 
-  useEffect(() => {
-    async function load() {
-      const { data: userData } = await supabase.auth.getUser()
-      if (!userData?.user) { navigate('/login'); return }
-      const { data } = await supabase.from('profiles').select('*').eq('id', userData.user.id).maybeSingle()
-      setProfile(data)
+  async function loadAll() {
+    const { data: userData } = await supabase.auth.getUser()
+    if (!userData?.user) { navigate('/login'); return }
+    setUserId(userData.user.id)
+
+    const { data: profileData } = await supabase.from('profiles').select('*').eq('id', userData.user.id).maybeSingle()
+    setProfile(profileData)
+    if (profileData) {
+      setName(profileData.name || '')
+      setCity(profileData.city || '')
+      setState(profileData.state || '')
     }
-    load()
-  }, [navigate])
+
+    const { data: freelancerData } = await supabase.from('freelancers').select('*').eq('user_id', userData.user.id).maybeSingle()
+    setFreelancer(freelancerData)
+    if (freelancerData) {
+      setRole((freelancerData.roles && freelancerData.roles[0]) || 'Pedreiro')
+      setPhone(freelancerData.phone_number || '')
+      setDescription(freelancerData.description || '')
+      setPhotoUrl(freelancerData.profile_picture_url || '')
+    }
+  }
+
+  useEffect(() => { loadAll() }, []) // eslint-disable-line
 
   async function handleLogout() {
     await supabase.auth.signOut()
     navigate('/login')
   }
 
+  async function saveProfile(e) {
+    e.preventDefault()
+    setSaveError('')
+    const { error } = await supabase.from('profiles').update({ name, city, state }).eq('id', userId)
+    if (error) { setSaveError(error.message); return }
+    setEditingProfile(false)
+    loadAll()
+  }
+
+  async function saveProvider(e) {
+    e.preventDefault()
+    setSaveError('')
+    if (freelancer) {
+      const { error } = await supabase.from('freelancers').update({
+        roles: [role], phone_number: phone, description, profile_picture_url: photoUrl,
+      }).eq('user_id', userId)
+      if (error) { setSaveError(error.message); return }
+    } else {
+      const { error } = await supabase.from('freelancers').insert({
+        user_id: userId, roles: [role], phone_number: phone, description, profile_picture_url: photoUrl,
+        cpf: '', birthdate: '2000-01-01',
+      })
+      if (error) { setSaveError(error.message); return }
+      await supabase.from('profiles').update({ is_freelancer: true }).eq('id', userId)
+    }
+    setBecomingProvider(false)
+    setEditingProvider(false)
+    loadAll()
+  }
+
   return (
     <div className="app-shell">
       <div className="topbar" style={{ paddingBottom: 18 }}><div className="brand"><span>Meu perfil</span></div></div>
+
       <div className="page-pad">
-        {profile ? (
+        {!profile && <p style={{ fontSize: 13, color: 'var(--biko-sub)' }}>Carregando...</p>}
+
+        {profile && !editingProfile && (
           <>
             <p style={{ fontSize: 15, fontWeight: 500, margin: '0 0 4px' }}>{profile.name}</p>
             <p style={{ fontSize: 13, color: 'var(--biko-sub)', margin: '0 0 2px' }}>{profile.email}</p>
-            <p style={{ fontSize: 13, color: 'var(--biko-sub)', margin: '0 0 20px' }}>{profile.city}, {profile.state}</p>
+            <p style={{ fontSize: 13, color: 'var(--biko-sub)', margin: '0 0 14px' }}>{profile.city}, {profile.state}</p>
+            <button className="btn-secondary" style={{ marginBottom: 20 }} onClick={() => setEditingProfile(true)}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><IconEdit size={15} /> Editar dados</span>
+            </button>
           </>
-        ) : <p style={{ fontSize: 13, color: 'var(--biko-sub)' }}>Carregando...</p>}
+        )}
+
+        {profile && editingProfile && (
+          <form onSubmit={saveProfile} style={{ marginBottom: 20 }}>
+            <input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome" required />
+            <input className="field" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Cidade" required />
+            <input className="field" value={state} onChange={(e) => setState(e.target.value)} placeholder="Estado" required />
+            {saveError && <p className="error-text">{saveError}</p>}
+            <button className="btn-primary" type="submit">Salvar</button>
+            <button className="btn-secondary" type="button" style={{ marginTop: 8 }} onClick={() => setEditingProfile(false)}>Cancelar</button>
+          </form>
+        )}
+
+        <div style={{ borderTop: '0.5px solid var(--biko-line)', paddingTop: 18, marginBottom: 20 }}>
+          {!freelancer && !becomingProvider && (
+            <>
+              <p style={{ fontSize: 13, color: 'var(--biko-sub)', margin: '0 0 10px' }}>
+                Quer aparecer nas buscas e receber pedidos de clientes?
+              </p>
+              <button className="btn-primary" onClick={() => setBecomingProvider(true)}>Quero oferecer meus serviços</button>
+            </>
+          )}
+
+          {freelancer && !editingProvider && (
+            <>
+              <p style={{ fontSize: 13, fontWeight: 500, margin: '0 0 6px' }}>Meu perfil de prestador</p>
+              <p style={{ fontSize: 12, color: 'var(--biko-sub)', margin: '0 0 2px' }}>Categoria: {(freelancer.roles && freelancer.roles[0]) || '—'}</p>
+              <p style={{ fontSize: 12, color: 'var(--biko-sub)', margin: '0 0 2px' }}>Telefone: {freelancer.phone_number || '—'}</p>
+              <p style={{ fontSize: 12, color: 'var(--biko-sub)', margin: '0 0 10px' }}>{freelancer.description || 'Sem descrição ainda.'}</p>
+              <button className="btn-secondary" onClick={() => setEditingProvider(true)}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><IconEdit size={15} /> Editar perfil de prestador</span>
+              </button>
+            </>
+          )}
+
+          {(becomingProvider || editingProvider) && (
+            <form onSubmit={saveProvider}>
+              <select className="field" value={role} onChange={(e) => setRole(e.target.value)}>
+                {CATEGORIES.map((c) => <option key={c.label} value={c.label}>{c.label}</option>)}
+              </select>
+              <input className="field" placeholder="Telefone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <input className="field" placeholder="Link da foto (opcional)" value={photoUrl} onChange={(e) => setPhotoUrl(e.target.value)} />
+              <textarea className="field" placeholder="Fale sobre seu trabalho" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
+              {saveError && <p className="error-text">{saveError}</p>}
+              <button className="btn-primary" type="submit">Salvar</button>
+              <button className="btn-secondary" type="button" style={{ marginTop: 8 }} onClick={() => { setBecomingProvider(false); setEditingProvider(false) }}>Cancelar</button>
+            </form>
+          )}
+        </div>
+
         <button className="btn-secondary" onClick={handleLogout}>Sair da conta</button>
       </div>
+
       <BottomNav />
     </div>
   )
