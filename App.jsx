@@ -21,22 +21,29 @@ const NAV_ITEMS = [
   { path: '/perfil', icon: 'ti-user' },
 ]
 
+const navItemStyleDisabled = { opacity: 0.35, pointerEvents: 'none' }
+
 function BottomNav() {
   const location = useLocation()
   const navigate = useNavigate()
   return (
     <nav className="bottom-nav">
-      {NAV_ITEMS.map((item) => (
-        
-          key={item.path}
-          href={item.path}
-          className={location.pathname === item.path ? 'active' : ''}
-          style={item.disabled ? { opacity: 0.35, pointerEvents: 'none' } : undefined}
-          onClick={(e) => { e.preventDefault(); navigate(item.path) }}
-        >
-          <i className={`ti ${item.icon}`} aria-hidden="true"></i>
-        </a>
-      ))}
+      {NAV_ITEMS.map((item) => {
+        const isActive = location.pathname === item.path
+        const linkClass = isActive ? 'active' : ''
+        const linkStyle = item.disabled ? navItemStyleDisabled : undefined
+        return (
+          <a
+            key={item.path}
+            href={item.path}
+            className={linkClass}
+            style={linkStyle}
+            onClick={(e) => { e.preventDefault(); navigate(item.path) }}
+          >
+            <i className={`ti ${item.icon}`} aria-hidden="true"></i>
+          </a>
+        )
+      })}
     </nav>
   )
 }
