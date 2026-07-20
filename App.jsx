@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, useSearchParams, useParams } from 'react-router-dom'
 import { supabase } from './supabaseClient'
 
 // ---------- Ícones (SVG próprio, não depende de fonte externa) ----------
@@ -21,6 +21,8 @@ const IconDroplet = (p) => <Icon {...p}><path d="M12 2s7 8 7 13a7 7 0 0 1-14 0c0
 const IconBrush = (p) => <Icon {...p}><path d="M9 15l-4 6" /><path d="M14 4c3 0 6 2 6 5 0 4-6 4-6 8-3 0-5-2-5-5 0-4 2-8 5-8z" /></Icon>
 const IconBack = (p) => <Icon {...p}><path d="M15 18l-6-6 6-6" /></Icon>
 const IconEdit = (p) => <Icon {...p}><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></Icon>
+const IconTrash = (p) => <Icon {...p}><path d="M4 7h16" /><path d="M9 7V4h6v3" /><path d="M6 7l1 13h10l1-13" /></Icon>
+const IconPlus = (p) => <Icon {...p}><path d="M12 5v14M5 12h14" /></Icon>
 
 // ---------- Marca (nível de bolha) ----------
 function LevelMark({ size = 22, color = '#F2A93B' }) {
@@ -202,14 +204,14 @@ function Home() {
       <p className="section-title">Profissionais no ponto</p>
       {providers.length === 0 && <p style={{ padding: '0 18px', fontSize: 12, color: 'var(--biko-sub)' }}>Nenhum profissional cadastrado ainda por aqui.</p>}
       {providers.map((p) => (
-        <div className="provider-card" key={p.user_id}>
+        <button className="provider-card" key={p.user_id} style={{ width: 'calc(100% - 36px)', textAlign: 'left', border: '0.5px solid var(--biko-line)', cursor: 'pointer' }} onClick={() => navigate(`/prestador/${p.user_id}`)}>
           <div className="avatar-placeholder" />
           <div style={{ flex: 1 }}>
             <p className="provider-name">{p.profiles?.name || 'Profissional'}</p>
             <p className="provider-meta">{(p.roles && p.roles[0]) || 'Prestador'} · {p.profiles?.city}, {p.profiles?.state}</p>
           </div>
           <LevelMark size={20} color="var(--biko-brick)" />
-        </div>
+        </button>
       ))}
       <BottomNav />
     </div>
@@ -218,6 +220,7 @@ function Home() {
 
 // ---------- Busca ----------
 function Search() {
+  const navigate = useNavigate()
   const [params] = useSearchParams()
   const [categoria, setCategoria] = useState(params.get('categoria') || '')
   const [cidade, setCidade] = useState('')
@@ -246,15 +249,62 @@ function Search() {
       </div>
       <p className="section-title">{results.length} encontrados</p>
       {results.map((p) => (
-        <div className="provider-card" key={p.user_id}>
+        <button className="provider-card" key={p.user_id} style={{ width: 'calc(100% - 36px)', textAlign: 'left', border: '0.5px solid var(--biko-line)', cursor: 'pointer' }} onClick={() => navigate(`/prestador/${p.user_id}`)}>
           <div className="avatar-placeholder" />
           <div style={{ flex: 1 }}>
             <p className="provider-name">{p.profiles?.name || 'Profissional'}</p>
             <p className="provider-meta">{(p.roles && p.roles[0]) || 'Prestador'} · {p.profiles?.city}, {p.profiles?.state}</p>
           </div>
           <LevelMark size={20} color="var(--biko-brick)" />
-        </div>
+        </button>
       ))}
+      <BottomNav />
+    </div>
+  )
+}
+
+// ---------- Perfil de prestador (visão pública) ----------
+function ProviderDetail() {
+  const { id } = useParams()
+  const [data, setData] = useState(null)
+  const [highlights, setHighlights] = useState([])
+
+  useEffect(() => {
+    async function load() {
+      const { data: freelancerData } = await supabase.from('freelancers').select('*, profiles(name, city, state)').eq('user_id', id).maybeSingle()
+      setData(freelancerData)
+      const { data: highlightsData } = await supabase.from('highlights').select('*').eq('user_id', id)
+      setHighlights(highlightsData || [])
+    }
+    load()
+  }, [id])
+
+  const allImages = highlights.flatMap((h) => h.images || [])
+
+  return (
+    <div className="app-shell">
+      <div className="topbar" style={{ paddingBottom: 18 }}>
+        <BackButton />
+        <div className="brand"><span>{data?.profiles?.name || 'Profissional'}</span></div>
+      </div>
+      <div className="page-pad">
+        {!data && <p style={{ fontSize: 13, color: 'var(--biko-sub)' }}>Carregando...</p>}
+        {data && (
+          <>
+            <p className="provider-meta" style={{ marginBottom: 4 }}>{(data.roles && data.roles[0]) || 'Prestador'} · {data.profiles?.city}, {data.profiles?.state}</p>
+            {data.phone_number && <p className="provider-meta" style={{ marginBottom: 12 }}>Telefone: {data.phone_number}</p>}
+            {data.description && <p style={{ fontSize: 13, color: 'var(--biko-ink)', marginBottom: 16 }}>{data.description}</p>}
+
+            <p className="section-title" style={{ margin: '0 0 10px', padding: 0 }}>Portfólio</p>
+            {allImages.length === 0 && <p style={{ fontSize: 12, color: 'var(--biko-sub)' }}>Nenhuma foto adicionada ainda.</p>}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              {allImages.map((url, i) => (
+                <img key={i} src={url} alt="Trabalho do profissional" style={{ width: '100%', height: 110, objectFit: 'cover', borderRadius: 10, border: '0.5px solid var(--biko-line)' }} />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
       <BottomNav />
     </div>
   )
@@ -279,6 +329,10 @@ function Profile() {
   const [description, setDescription] = useState('')
   const [photoUrl, setPhotoUrl] = useState('')
 
+  const [portfolio, setPortfolio] = useState([])
+  const [newImageUrl, setNewImageUrl] = useState('')
+  const [portfolioError, setPortfolioError] = useState('')
+
   const navigate = useNavigate()
 
   async function loadAll() {
@@ -301,7 +355,32 @@ function Profile() {
       setPhone(freelancerData.phone_number || '')
       setDescription(freelancerData.description || '')
       setPhotoUrl(freelancerData.profile_picture_url || '')
+
+      const { data: highlightRow } = await supabase.from('highlights').select('*').eq('user_id', userData.user.id).maybeSingle()
+      setPortfolio((highlightRow && highlightRow.images) || [])
     }
+  }
+
+  async function addPortfolioImage(e) {
+    e.preventDefault()
+    setPortfolioError('')
+    const url = newImageUrl.trim()
+    if (!url) return
+    const updated = [...portfolio, url]
+    const { data: existingRow } = await supabase.from('highlights').select('id').eq('user_id', userId).maybeSingle()
+    const { error } = existingRow
+      ? await supabase.from('highlights').update({ images: updated }).eq('id', existingRow.id)
+      : await supabase.from('highlights').insert({ user_id: userId, role, images: updated })
+    if (error) { setPortfolioError(error.message); return }
+    setPortfolio(updated)
+    setNewImageUrl('')
+  }
+
+  async function removePortfolioImage(url) {
+    const updated = portfolio.filter((img) => img !== url)
+    const { data: existingRow } = await supabase.from('highlights').select('id').eq('user_id', userId).maybeSingle()
+    if (existingRow) await supabase.from('highlights').update({ images: updated }).eq('id', existingRow.id)
+    setPortfolio(updated)
   }
 
   useEffect(() => { loadAll() }, []) // eslint-disable-line
@@ -407,6 +486,39 @@ function Profile() {
           )}
         </div>
 
+        {freelancer && (
+          <div style={{ borderTop: '0.5px solid var(--biko-line)', paddingTop: 18, marginBottom: 20 }}>
+            <p style={{ fontSize: 13, fontWeight: 500, margin: '0 0 10px' }}>Fotos do meu trabalho (portfólio)</p>
+            <p style={{ fontSize: 11, color: 'var(--biko-sub)', margin: '0 0 10px' }}>
+              Por enquanto, adicione o link de uma foto já hospedada na internet (ex: um link do Google Fotos ou Imgur). Upload direto de arquivo vem numa próxima etapa.
+            </p>
+            {portfolio.length > 0 && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 10 }}>
+                {portfolio.map((url, i) => (
+                  <div key={i} style={{ position: 'relative' }}>
+                    <img src={url} alt="Foto do portfólio" style={{ width: '100%', height: 70, objectFit: 'cover', borderRadius: 8, border: '0.5px solid var(--biko-line)' }} />
+                    <button
+                      type="button"
+                      onClick={() => removePortfolioImage(url)}
+                      aria-label="Remover foto"
+                      style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(36,33,28,0.75)', border: 'none', borderRadius: 6, padding: 3, color: '#fff', cursor: 'pointer' }}
+                    >
+                      <IconTrash size={13} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <form onSubmit={addPortfolioImage} style={{ display: 'flex', gap: 6 }}>
+              <input className="field" style={{ marginBottom: 0, flex: 1 }} placeholder="Link da foto" value={newImageUrl} onChange={(e) => setNewImageUrl(e.target.value)} />
+              <button className="btn-primary" type="submit" style={{ width: 44, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }} aria-label="Adicionar foto">
+                <IconPlus size={18} />
+              </button>
+            </form>
+            {portfolioError && <p className="error-text">{portfolioError}</p>}
+          </div>
+        )}
+
         <button className="btn-secondary" onClick={handleLogout}>Sair da conta</button>
       </div>
 
@@ -434,6 +546,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<RequireAuth><Home /></RequireAuth>} />
         <Route path="/buscar" element={<RequireAuth><Search /></RequireAuth>} />
+        <Route path="/prestador/:id" element={<RequireAuth><ProviderDetail /></RequireAuth>} />
         <Route path="/perfil" element={<RequireAuth><Profile /></RequireAuth>} />
       </Routes>
     </BrowserRouter>
